@@ -1,13 +1,11 @@
-/* MotoValidation v2.0.0
+/* MotoValidation v2.0.5
 * This validation library seeks to limit the amount of code required to perform validation in IBM BPM
 * Please see http://www.joemotacek.com/motovalidation-2-0 for documentation
 */
-
-
 var motoValidation = (function(){
     //Private Vars
     var baseObject = {};
-    var validationFields = [];
+    var validateFields = [];
     //REGEXs
     //Alpha with spaces and hyphens
     var alphaSpaceRegEx = /^[-\ a-zA-Z]+$/;
@@ -43,7 +41,7 @@ var motoValidation = (function(){
         }
     }
 
-    var validateCase = function(value, location, validationType, message){
+    var validateCase = function(value, location, validationType, message, customFunction){
         if(validationType == "required-string"){
             message = messageCheck(message, "Field is required");
             if(typeof value == "undefined" || !value){
@@ -54,28 +52,34 @@ var motoValidation = (function(){
                 }
             }
         }
-        if(validationType == "email" && !emailRegEx.test(validateFields[i].value)){
+        if(validationType == "email" && !emailRegEx.test(value)){
             message = messageCheck(message, "Please provide a valid email address");
             tw.system.addCoachValidationError(tw.system.coachValidation, location, message);
         }
-        if(validationType == "phone" && !phoneRegEx.test(validateFields[i].value)){
+        if(validationType == "phone" && !phoneRegEx.test(value)){
             message = messageCheck(message, "Please provide a valid phone number");
             tw.system.addCoachValidationError(tw.system.coachValidation, location, message);
         }
-        if(validationType == "usPhone" && !usPhoneRegEx.test(validateFields[i].value)){
+        if(validationType == "usPhone" && !usPhoneRegEx.test(value)){
             message = messageCheck(message, "Please provide a phone number in the format of (123) 456-7890 or 123-456-7890");
             tw.system.addCoachValidationError(tw.system.coachValidation, location, message);
         }
-        if(validationType == "boolean-true" && !validateFields[i].value){
+        if(validationType == "boolean-true" && !value){
             message = messageCheck(message, "Please complete");
             tw.system.addCoachValidationError(tw.system.coachValidation, location, message);
         }
-        if(validationType == "bank-routing" && !bankRoutingRegEx.test(validateFields[i].value)){
+        if(validationType == "bank-routing" && !bankRoutingRegEx.test(value)){
             message = messageCheck(message, "Please provide a valid routing number");                    
             tw.system.addCoachValidationError(tw.system.coachValidation, location, message);
-        }if(validationType == "custom" && !validateFields[i].custom(validateFields[i].value)){
-            message = messageCheck(message, "Please provide a valid routing number");
-            tw.system.addCoachValidationError(tw.system.coachValidation, location, message);
+        }if(validationType == "custom"){
+            if( typeof customFunction == "function"){
+                if(!customFunction(value)){
+                    message = messageCheck(message, "Custom validtion failed");
+                    tw.system.addCoachValidationError(tw.system.coachValidation, location, message);
+                }
+            }else{
+                throw new motoValidationException("Custom parameter must be of type function.")
+            }
         }
     }
 
@@ -151,7 +155,7 @@ var motoValidation = (function(){
                 values: values,
                 type: type,
                 validation: validationType,
-                custom, custom
+                custom: custom
             }
             validateFields.push(newValidation);
         },
@@ -160,23 +164,25 @@ var motoValidation = (function(){
             var message = "";
             for(var i = 0; i < validateFields.length; i++){
                 if(validateFields[i].type == "single"){
-                    validateCase(validateFields[i].value, validateFields[i].location, validateFields[i].validation, validateFields[i].message);
+                    validateCase(validateFields[i].value, validateFields[i].location, validateFields[i].validation, validateFields[i].message, validateFields[i].custom);
                 }
                 if(validateFields[i].type == "object"){
                     for (var j = 0; j < validateFields[i].values.length; j++){
                         var valueName = validateFields[i].values[j];
-                        validateCase(validateFields[i].object[valueName], validateFields[i].location + "." + valueName, validateFields[i].validation, validateFields[i].message);
+                        validateCase(validateFields[i].object[valueName], validateFields[i].location + "." + valueName, validateFields[i].validation, validateFields[i].message, validateFields[i].custom);
                     }
                 }
                 if(validateFields[i].type == "list"){
                     for (var k = 0; k < validateFields[i].object.length; k++){
                         for (var l = 0; l < validateFields[i].values.length; l++){
                             var valueName = validateFields[i].values[l];
-                            validateCase(validateFields[i].object[k][value], validateFields[i].location+"["+k+"]." + valueName, validateFields[i].validation, validateFields[i].message);
+                            validateCase(validateFields[i].object[k][value], validateFields[i].location+"["+k+"]." + valueName, validateFields[i].validation, validateFields[i].message, validateFields[i].custom);
                         }
                     }
                 }
             }
+            //clear the validation so it's rebuilt next time...
+            validateFields = [];
         }
     };
     return validator;
