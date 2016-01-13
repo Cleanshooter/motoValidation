@@ -1,4 +1,4 @@
-/* MotoValidation v2.0.5
+/* MotoValidation v2.0.8
 * This validation library seeks to limit the amount of code required to perform validation in IBM BPM
 * Please see http://www.joemotacek.com/motovalidation-2-0 for documentation
 */
@@ -85,6 +85,9 @@ var motoValidation = (function(){
 
     //Public Methods
     var validator = {
+        clearValidateFields: function(){
+            validateFields = [];
+        },
         setBaseObject: function(newBaseObject){
             //base object should be in a simple name value pair format
             //e.g. {name: "tw.local.myobject", value: tw.local.myobject}
@@ -95,6 +98,9 @@ var motoValidation = (function(){
                     throw new motoValidationException("Base Object does not meet {name: 'string', value: object} format.");
                 }
             }
+        },
+        sBO: function(newBaseObject){
+            this.setBaseObject(newBaseObject);
         },
         addFieldValidation: function(fieldName, subObject, validationType, message, custom){
             //subObject, message & validationType are optional parameters
@@ -125,6 +131,10 @@ var motoValidation = (function(){
                 custom: custom
             }
             validateFields.push(newValidation);
+        },
+        aFV: function(fieldName, subObject, validationType, message, custom){
+            //function short name
+            this.addFieldValidation(fieldName, subObject, validationType, message, custom);
         },
         addObjectValidation: function(objectName, values, type, validationType, message, custom){
             //type, message & validationType are optional parameters
@@ -159,6 +169,10 @@ var motoValidation = (function(){
             }
             validateFields.push(newValidation);
         },
+        aOV: function(objectName, values, type, validationType, message, custom){
+            //function short name
+            this.addObjectValidation(objectName, values, type, validationType, message, custom);
+        },
         validate: function(){
             //Loop through and do checks
             var message = "";
@@ -183,7 +197,11 @@ var motoValidation = (function(){
             }
             //clear the validation so it's rebuilt next time...
             validateFields = [];
+        },
+        val: function(){
+            this.validate();
         }
     };
     return validator;
 })();
+var mV = motoValidation;
