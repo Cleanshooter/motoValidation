@@ -1,4 +1,4 @@
-/* MotoValidation v2.0.8
+/* MotoValidation v2.1.0
 * This validation library seeks to limit the amount of code required to perform validation in IBM BPM
 * Please see http://www.joemotacek.com/motovalidation-2-0 for documentation
 */
@@ -41,6 +41,14 @@ var motoValidation = (function(){
         }
     }
 
+    var getNextObject = function(baseObject, valueName){
+        if(baseObject.toString() != "[TWLocal]"){
+            return baseObject.getPropertyValue(valueName);
+        }else{
+            throw new motoValidationException("You can not get a variable from the Local Object, method does not exist.");
+        }
+    }
+
     var validateCase = function(value, location, validationType, message, customFunction){
         if(validationType == "required-string"){
             message = messageCheck(message, "Field is required");
@@ -72,7 +80,7 @@ var motoValidation = (function(){
             message = messageCheck(message, "Please provide a valid routing number");                    
             tw.system.addCoachValidationError(tw.system.coachValidation, location, message);
         }if(validationType == "custom"){
-            if( typeof customFunction == "function"){
+            if( typeof customFunction === "function"){
                 if(!customFunction(value)){
                     message = messageCheck(message, "Custom validtion failed");
                     tw.system.addCoachValidationError(tw.system.coachValidation, location, message);
@@ -117,18 +125,28 @@ var motoValidation = (function(){
             
             if( Object.prototype.toString.call(subObject) === '[object Array]'){
                 for(var i = 0; i < subObject.length; i++){
-                    baseBO = baseBO.getPropertyValue(subObject[i]);
+                    baseBO = getNextObject(baseBO, subObject[i]);
                     basePath += subObject[i]+".";
                 }
             }
-            
-            var newValidation = {
-                message: message,
-                location: basePath + fieldName,
-                value: baseBO.getPropertyValue(fieldName),
-                type: "single",
-                validation: validationType,
-                custom: custom
+            if(fieldName && fieldName != ""){
+                var newValidation = {
+                    message: message,
+                    location: basePath + fieldName,
+                    value: getNextObject(baseBO, fieldName),
+                    type: "single",
+                    validation: validationType,
+                    custom: custom
+                }
+            }else{
+                var newValidation = {
+                    message: message,
+                    location: basePath,
+                    value: baseBO,
+                    type: "single",
+                    validation: validationType,
+                    custom: custom
+                }
             }
             validateFields.push(newValidation);
         },
@@ -157,16 +175,28 @@ var motoValidation = (function(){
             if( Object.prototype.toString.call(values) != '[object Array]'){
                 throw new motoValidationException("Value parameter must be of type array in addObjectValidation method");
             }
-
-            var newValidation = {
-                message: message,
-                location: basePath + objectName,
-                object: baseBO.getPropertyValue(objectName),
-                values: values,
-                type: type,
-                validation: validationType,
-                custom: custom
+            if(objectName && objectName != ""){
+                var newValidation = {
+                    message: message,
+                    location: basePath + objectName,
+                    object: getNextObject(baseBO, objectName),
+                    values: values,
+                    type: type,
+                    validation: validationType,
+                    custom: custom
+                }
+            }else{
+                var newValidation = {
+                    message: message,
+                    location: basePath,
+                    object: baseBO,
+                    values: values,
+                    type: type,
+                    validation: validationType,
+                    custom: custom
+                }
             }
+            
             validateFields.push(newValidation);
         },
         aOV: function(objectName, values, type, validationType, message, custom){
@@ -190,7 +220,7 @@ var motoValidation = (function(){
                     for (var k = 0; k < validateFields[i].object.length; k++){
                         for (var l = 0; l < validateFields[i].values.length; l++){
                             var valueName = validateFields[i].values[l];
-                            validateCase(validateFields[i].object[k][value], validateFields[i].location+"["+k+"]." + valueName, validateFields[i].validation, validateFields[i].message, validateFields[i].custom);
+                            validateCase(validateFields[i].object[k][valueName], validateFields[i].location+"["+k+"]." + valueName, validateFields[i].validation, validateFields[i].message, validateFields[i].custom);
                         }
                     }
                 }
