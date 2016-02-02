@@ -1,8 +1,9 @@
-/* MotoValidation v2.1.0
+/* MotoChecker v3.0.0 alpha
+* The special edition with more dewbacks so you know it's good.
 * This validation library seeks to limit the amount of code required to perform validation in IBM BPM
 * Please see http://www.joemotacek.com/motovalidation-2-0 for documentation
 */
-var motoValidation = (function(){
+var motoChecker = (function(){
     //Private Vars
     var baseObject = {};
     var validateFields = [];
@@ -27,10 +28,11 @@ var motoValidation = (function(){
     //Bank Rounting Number validation 2015
     var bankRoutingRegEx = /^((0[0-9])|(1[0-2])|(2[1-9])|(3[0-2])|(6[1-9])|(7[0-2])|80)([0-9]{7})$/;
 
+
     //Private Mehtods
-    var motoValidationException = function(message) {
+    var motoCheckerException = function(message) {
         this.message = message;
-        this.name = "MotoValidation Exception";
+        this.name = "MotoChecker Exception";
     };
 
     var messageCheck = function(value, defaultMessage){
@@ -45,7 +47,7 @@ var motoValidation = (function(){
         if(baseObject.toString() != "[TWLocal]"){
             return baseObject.getPropertyValue(valueName);
         }else{
-            throw new motoValidationException("You can not get a variable from the Local Object, method does not exist.");
+            throw new motoCheckerException("You can not get a variable from the Local Object, method does not exist.");
         }
     }
 
@@ -86,7 +88,7 @@ var motoValidation = (function(){
                     tw.system.addCoachValidationError(tw.system.coachValidation, location, message);
                 }
             }else{
-                throw new motoValidationException("Custom parameter must be of type function.")
+                throw new motoCheckerException("Custom parameter must be of type function.")
             }
         }
     }
@@ -96,6 +98,9 @@ var motoValidation = (function(){
         clearValidateFields: function(){
             validateFields = [];
         },
+        clear: function(){
+            this.clearValidateFields();
+        },
         setBaseObject: function(newBaseObject){
             //base object should be in a simple name value pair format
             //e.g. {name: "tw.local.myobject", value: tw.local.myobject}
@@ -103,7 +108,7 @@ var motoValidation = (function(){
                 if(typeof newBaseObject.name == "string"  && typeof newBaseObject.value != "undefined"){
                     baseObject = newBaseObject;
                 }else{
-                    throw new motoValidationException("Base Object does not meet {name: 'string', value: object} format.");
+                    throw new motoCheckerException("Base Object does not meet {name: 'string', value: object} format.");
                 }
             }
         },
@@ -120,7 +125,7 @@ var motoValidation = (function(){
                 var baseBO = baseObject.value;
                 var basePath = baseObject.name+".";
             }else{
-                throw new motoValidationException("Base Object Undefined");
+                throw new motoCheckerException("Base Object Undefined");
             }
             
             if( Object.prototype.toString.call(subObject) === '[object Array]'){
@@ -169,11 +174,11 @@ var motoValidation = (function(){
                 var baseBO = baseObject.value;
                 var basePath = baseObject.name+".";
             }else{
-                throw new motoValidationException("Base Object Undefined");
+                throw new motoCheckerException("Base Object Undefined");
             }
             
             if( Object.prototype.toString.call(values) != '[object Array]'){
-                throw new motoValidationException("Value parameter must be of type array in addObjectValidation method");
+                throw new motoCheckerException("Value parameter must be of type array in addObjectValidation method");
             }
             if(objectName && objectName != ""){
                 var newValidation = {
@@ -230,8 +235,22 @@ var motoValidation = (function(){
         },
         val: function(){
             this.validate();
+        },
+        executeStoredValidation: function(validationName, object){
+            if(typeof storedValidations != "undefined"){
+                if(typeof storedValidations[validationName] != 'function'){
+                    throw new motoCheckerException("You must provide a valid stored validation name.");
+                }else{
+                    storedValidations[validationName](object);
+                }
+            }else{
+                throw new motoCheckerException("There are no stored validations.");
+            }
+        },
+        exec: function(validationName, object){
+            this.executeStoredValidatoin(validationName, object)
         }
     };
     return validator;
 })();
-var mV = motoValidation;
+var mC = motoChecker;
