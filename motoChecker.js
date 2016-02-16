@@ -1,4 +1,4 @@
-/* MotoChecker v3.0.0 alpha
+/* MotoChecker v3.0.0
 * The special edition with more dewbacks so you know it's good.
 * This validation library seeks to limit the amount of code required to perform validation in IBM BPM
 * Please see http://www.joemotacek.com/motovalidation-2-0 for documentation
@@ -41,7 +41,7 @@ var motoChecker = (function(){
         }else{
             return value
         }
-    }
+    };
 
     var getNextObject = function(baseObject, valueName){
         if(baseObject.toString() != "[TWLocal]"){
@@ -57,6 +57,9 @@ var motoChecker = (function(){
             if(typeof value == "undefined" || !value){
                 tw.system.addCoachValidationError(tw.system.coachValidation, location, message);
             }else{
+                if(typeof value != "string"){
+                    throw new motoCheckerException("Required only applies to strings.  Please check your variables & code.");
+                }
                 if(value.trim() == ""){
                     tw.system.addCoachValidationError(tw.system.coachValidation, location, message);
                 }
@@ -81,14 +84,24 @@ var motoChecker = (function(){
         if(validationType == "bank-routing" && !bankRoutingRegEx.test(value)){
             message = messageCheck(message, "Please provide a valid routing number");                    
             tw.system.addCoachValidationError(tw.system.coachValidation, location, message);
-        }if(validationType == "custom"){
+        }
+        if(validationType == ">0"){
+            if(typeof value != "number"){
+                throw new motoCheckerException("Greater than 0 only applies to Numbers.  Please check your variables & code.");
+            }
+            if(value <= 0){
+                message = messageCheck(message, "Number must be greater than 0");                    
+                tw.system.addCoachValidationError(tw.system.coachValidation, location, message);
+            }
+        }
+        if(validationType == "custom"){
             if( typeof customFunction === "function"){
                 if(!customFunction(value)){
                     message = messageCheck(message, "Custom validtion failed");
                     tw.system.addCoachValidationError(tw.system.coachValidation, location, message);
                 }
             }else{
-                throw new motoCheckerException("Custom parameter must be of type function.")
+                throw new motoCheckerException("Custom parameter must be of type function.");
             }
         }
     }
@@ -248,7 +261,7 @@ var motoChecker = (function(){
             }
         },
         exec: function(validationName, object){
-            this.executeStoredValidatoin(validationName, object)
+            this.executeStoredValidation(validationName, object)
         }
     };
     return validator;
